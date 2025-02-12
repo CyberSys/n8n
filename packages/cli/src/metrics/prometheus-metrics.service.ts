@@ -57,6 +57,7 @@ export class PrometheusMetricsService {
 		this.initCacheMetrics();
 		this.initEventBusMetrics();
 		this.initRouteMetrics(app);
+		this.initActivityMetric(app);
 		this.initQueueMetrics();
 		this.mountMetricsEndpoint(app);
 	}
@@ -142,6 +143,37 @@ export class PrometheusMetricsService {
 				'/form-test/',
 			],
 			metricsMiddleware,
+		);
+	}
+
+	/**
+	 * Set up metric for user activity based on backend calls
+	 */
+	private initActivityMetric(app: express.Application) {
+		const activityGauge = new promClient.Gauge({
+			name: this.prefix + 'last_activity',
+			help: 'last user activity (backend call).',
+			labelNames: ['timestamp'],
+		});
+
+		activityGauge.set({ timestamp: new Date().toISOString() }, 1);
+
+		app.use(
+			[
+				'/rest/',
+				'/api/',
+				'/webhook/',
+				'/webhook-waiting/',
+				'/webhook-test/',
+				'/form/',
+				'/form-waiting/',
+				'/form-test/',
+			],
+			(_req, _res, next) => {
+				activityGauge.reset();
+				activityGauge.set({ timestamp: new Date().toISOString() }, 1);
+				next();
+			},
 		);
 	}
 

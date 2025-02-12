@@ -91,6 +91,31 @@ describe('PrometheusMetricsService', () => {
 			});
 		});
 
+		it('should set up route metrics with `express-prom-bundle`', async () => {
+			prometheusMetricsService.enableMetric('routes');
+			await prometheusMetricsService.init(app);
+
+			expect(promClient.Gauge).toHaveBeenNthCalledWith(1, {
+				name: 'n8n_last_activity',
+				help: 'last user activity (backend call).',
+				labelNames: ['timestamp'],
+			});
+
+			expect(app.use).toHaveBeenCalledWith(
+				[
+					'/rest/',
+					'/api/',
+					'/webhook/',
+					'/webhook-waiting/',
+					'/webhook-test/',
+					'/form/',
+					'/form-waiting/',
+					'/form-test/',
+				],
+				expect.any(Function),
+			);
+		});
+
 		it('should set up default metrics collection with `prom-client`', async () => {
 			prometheusMetricsService.enableMetric('default');
 			await prometheusMetricsService.init(app);
